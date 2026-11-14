@@ -31,5 +31,8 @@ security:
     access_control:
         # Autorise l'accès public à la connexion
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/auth/check-users, roles: PUBLIC_ACCESS }
+        - { path: ^/api/register-admin, roles: PUBLIC_ACCESS }
+        - { path: ^/user/, roles: PUBLIC_ACCESS }
         # Exige un token JWT valide pour toutes les autres routes /api
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
