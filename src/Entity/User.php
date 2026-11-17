@@ -32,7 +32,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 100)]
-    private ?string $nom = null;
+    private ?string $nom = 'Inconue';
 
     public function getId(): ?int
     {
