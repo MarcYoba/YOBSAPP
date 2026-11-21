@@ -47,6 +47,7 @@ class RegisterAdminController extends AbstractController
         
         // Attribuer le rôle Administrateur
         $user->setRoles(['ROLE_ADMIN']);
+        $user->setIsActive(true);
 
         // Hacher le mot de passe de façon sécurisée
         $hashedPassword = $passwordHasher->hashPassword($user, $password);

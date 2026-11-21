@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Membre;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -95,8 +96,8 @@ final class UserController extends AbstractController
         $user->setEmail($email);
         
         // Si votre entité possède une propriété/setter pour le nom complet
-        if (method_exists($user, 'setNom')) {
-            $user->setNom($nomComplet);
+        if (method_exists($user, 'setNomComplet')) {
+            $user->setNomComplet($nomComplet);
         }
 
         // Mappage du rôle textuel vers les rôles Symfony
@@ -132,5 +133,80 @@ final class UserController extends AbstractController
             'Secrétaire' => 'ROLE_SECRETAIRE',
             default => 'ROLE_USER',
         };
+    }
+
+    // recuperation des roles utilisateur connecté
+    #[Route('/api/me', name: 'api_me', methods: ['GET'])]
+    public function getConnectedUser(EntityManagerInterface $em): JsonResponse
+    {
+        /** @var ?User $user */
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Non authentifié',
+            ], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
+        $roles = array_values(array_unique($user->getRoles()));
+
+        // Ordre de priorité déterministe pour le rôle principal
+        $priorityRoles = [
+            'ROLE_ADMIN',
+            'ROLE_TRESORIER',
+            'ROLE_PRESIDENT',
+            'ROLE_SECRETAIRE',
+            'ROLE_COMMISSAIRE_AUX_COMPTES',
+            'ROLE_MEMBRE',
+            'ROLE_USER',
+        ];
+
+        $primaryRole = 'ROLE_USER';
+        foreach ($priorityRoles as $candidate) {
+            if (in_array($candidate, $roles, true)) {
+                $primaryRole = $candidate;
+                break;
+            }
+        }
+        if ($primaryRole === 'ROLE_USER') {
+            foreach ($roles as $r) {
+                if ($r !== 'ROLE_USER') {
+                    $primaryRole = $r;
+                    break;
+                }
+            }
+        }
+
+        // Recherche de la fiche Membre associée (relation directe ou par email)
+        $membre = method_exists($user, 'getMembre') ? $user->getMembre() : null;
+        if (!$membre instanceof Membre && $user->getEmail()) {
+            $membre = $em->getRepository(Membre::class)->findOneBy([
+                'email' => strtolower(trim((string) $user->getEmail())),
+            ]);
+        }
+
+        $hasMembre = $membre instanceof Membre;
+        $isAdmin = in_array('ROLE_ADMIN', $roles, true);
+        $forbiddenAdminMembreLink = $isAdmin && $hasMembre;
+
+        $nomComplet = method_exists($user, 'getNomComplet') && $user->getNomComplet()
+            ? (string) $user->getNomComplet()
+            : ($hasMembre ? trim($membre->getPrenom() . ' ' . $membre->getNom()) : '');
+
+        return $this->json([
+            'success' => true,
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'nomComplet' => $nomComplet,
+                'role' => $primaryRole,
+                'roles' => $roles,
+                'hasMembre' => $hasMembre,
+                'membreId' => $hasMembre ? $membre->getId() : null,
+                'forbiddenAdminMembreLink' => $forbiddenAdminMembreLink,
+            ],
+        ]);
+    
     }
 }

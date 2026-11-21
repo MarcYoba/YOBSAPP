@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -32,7 +34,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 100)]
-    private ?string $nom = 'Inconue';
+    private ?string $nomComplet = 'Inconue';
+
+    /**
+     * @var Collection<int, AdhesionFonds>
+     */
+    #[ORM\OneToMany(targetEntity: AdhesionFonds::class, mappedBy: 'user')]
+    private Collection $adhesionFonds;
+
+    #[ORM\Column]
+    private ?bool $isActive = null;
+
+    /**
+     * @var Collection<int, PlanRegularisation>
+     */
+    #[ORM\OneToMany(targetEntity: PlanRegularisation::class, mappedBy: 'user')]
+    private Collection $planRegularisations;
+
+    /**
+     * @var Collection<int, Membre>
+     */
+    #[ORM\OneToMany(targetEntity: Membre::class, mappedBy: 'utilisateur')]
+    private Collection $membres;
+
+    /**
+     * @var Collection<int, Fonds>
+     */
+    #[ORM\OneToMany(targetEntity: Fonds::class, mappedBy: 'user')]
+    private Collection $fonds;
+
+    public function __construct()
+    {
+        $this->adhesionFonds = new ArrayCollection();
+        $this->planRegularisations = new ArrayCollection();
+        $this->membres = new ArrayCollection();
+        $this->fonds = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -115,14 +152,146 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // @deprecated, to be removed when upgrading to Symfony 8
     }
 
-    public function getNom(): ?string
+    public function getNomComplet(): ?string
     {
-        return $this->nom;
+        return $this->nomComplet;
     }
 
-    public function setNom(string $nom): static
+    public function setNomComplet(string $nomComplet): static
     {
-        $this->nom = $nom;
+        $this->nomComplet = $nomComplet;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, AdhesionFonds>
+     */
+    public function getAdhesionFonds(): Collection
+    {
+        return $this->adhesionFonds;
+    }
+
+    public function addAdhesionFond(AdhesionFonds $adhesionFond): static
+    {
+        if (!$this->adhesionFonds->contains($adhesionFond)) {
+            $this->adhesionFonds->add($adhesionFond);
+            $adhesionFond->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAdhesionFond(AdhesionFonds $adhesionFond): static
+    {
+        if ($this->adhesionFonds->removeElement($adhesionFond)) {
+            // set the owning side to null (unless already changed)
+            if ($adhesionFond->getUser() === $this) {
+                $adhesionFond->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function isActive(): ?bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PlanRegularisation>
+     */
+    public function getPlanRegularisations(): Collection
+    {
+        return $this->planRegularisations;
+    }
+
+    public function addPlanRegularisation(PlanRegularisation $planRegularisation): static
+    {
+        if (!$this->planRegularisations->contains($planRegularisation)) {
+            $this->planRegularisations->add($planRegularisation);
+            $planRegularisation->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removePlanRegularisation(PlanRegularisation $planRegularisation): static
+    {
+        if ($this->planRegularisations->removeElement($planRegularisation)) {
+            // set the owning side to null (unless already changed)
+            if ($planRegularisation->getUser() === $this) {
+                $planRegularisation->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Membre>
+     */
+    public function getMembres(): Collection
+    {
+        return $this->membres;
+    }
+
+    public function addMembre(Membre $membre): static
+    {
+        if (!$this->membres->contains($membre)) {
+            $this->membres->add($membre);
+            $membre->setUtilisateur($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMembre(Membre $membre): static
+    {
+        if ($this->membres->removeElement($membre)) {
+            // set the owning side to null (unless already changed)
+            if ($membre->getUtilisateur() === $this) {
+                $membre->setUtilisateur(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Fonds>
+     */
+    public function getFonds(): Collection
+    {
+        return $this->fonds;
+    }
+
+    public function addFond(Fonds $fond): static
+    {
+        if (!$this->fonds->contains($fond)) {
+            $this->fonds->add($fond);
+            $fond->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFond(Fonds $fond): static
+    {
+        if ($this->fonds->removeElement($fond)) {
+            // set the owning side to null (unless already changed)
+            if ($fond->getUser() === $this) {
+                $fond->setUser(null);
+            }
+        }
 
         return $this;
     }
